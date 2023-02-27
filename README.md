@@ -2,7 +2,7 @@
 Project proposal for BIOL7180-D01: Scripting for Biologists
 
 ## Project Purpose: 
-The focus of the **OrthoScout** pr0ject is to create the tools necessary to utilize a database I am building for my dissertation called **FloralCoreDB**. 
+The focus of the **OrthoScout** project is to create the tools necessary to utilize a database I am building for my dissertation called **FloralCoreDB**. 
 
 > :cherry_blossom: **What is FloralCoreDB?** :cherry_blossom:
 > 
