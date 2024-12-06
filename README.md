@@ -1,6 +1,5 @@
-# OrthoScout
+# OrthoScout Description
 OrthoScout is a pipeline for identifying candidate genes in target species via orthology analyses with genes of known or suspected phenotypes in model systems. It is built to work alongside an SQLite3 database called FloralCoreDB for use in identifying potential candidate genes in regions of reduced recombination such as Sex-Determining Regions (SDRs), apomixis loci, and Self-Incompatibility (SI) loci in species that lack a mechanism of functional verification [Figure 1].
-
 
 This pipeine is a "funnel" to narrow down the possible genes in a region-of-interest to the most relevant based on mutant phenotypes in model species so that additional analyses may be done such as: Ks/Ka, multiple sequence alignments, structural inference and comparison, and more.
 
