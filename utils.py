@@ -200,7 +200,7 @@ def extract_gene_ids(csv_data: List[List[str]]) -> Dict[str, str]:
         target_organisms = row[3].split(", ")
         # For each target organism in the row, extract the gene ID and add it to the gene_ids dictionary
         for organism in target_organisms:
-            gene_id = organism.split("_")[-1]
+            gene_id = organism
             gene_ids[gene_id] = orthogroup
 
     # Return the gene_ids dictionary
