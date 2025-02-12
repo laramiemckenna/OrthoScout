@@ -39,7 +39,7 @@ def read_csv(file: str) -> dict:
         for row in reader:
             target_organisms = row["Target Organism"].strip('"').split(", ")
             for organism in target_organisms:
-                protein_id = organism.split('_')[-1]
+                protein_id = organism
                 gene_info = {"Locus": row["Locus"], "Description": row["Description"]}
                 descriptions[protein_id] = gene_info
     return descriptions
