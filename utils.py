@@ -49,6 +49,17 @@ def match_locus(orthofinder_df: pd.DataFrame, model_gene_info_df: pd.DataFrame) 
     # Create an empty list to store the matched rows
     matched_rows = []
 
+    # Create a dictionary of all OrthoFinder proteins
+    proteins_dict = {}
+    for _, ortho_row in orthofinder_df.iterrows():
+        orthogroup = ortho_row['Orthogroup']
+        proteins = []
+        for x in ortho_row[1:]:
+            if not pd.isnull(x):
+                proteins.extend(str(x).split(', '))
+        for protein in proteins:
+            proteins_dict[protein] = orthogroup
+
     # Iterate over each row in the model species gene information DataFrame
     for index, row in model_gene_info_df.iterrows():
         locus = row['Gene_model']
@@ -61,9 +72,8 @@ def match_locus(orthofinder_df: pd.DataFrame, model_gene_info_df: pd.DataFrame) 
 
             # Check if the locus value is found anywhere in the protein list
             # If a match is found, add a new row to the matched_rows list
-            if locus in proteins:
-                matched_rows.append({'Orthogroup': orthogroup, 'locus': locus, 'description': description})
-                break
+            if locus in proteins_dict:
+                matched_rows.append({'Orthogroup': proteins_dict[locus], 'locus': locus, 'description': description})
 
     # Create a new DataFrame from the matched_rows list
     matched_df = pd.DataFrame(matched_rows)
