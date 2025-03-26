@@ -1,3 +1,4 @@
+import time
 import argparse
 import os
 from typing import List, Dict
@@ -153,13 +154,21 @@ def main() -> None:
     input_fasta_file = input_files[input_fasta_ext]
 
     # read input files as data frames
+    start_time = time.perf_counter()
     orthofinder_df, model_gene_info_df = read_input_files(orthofinder_tsv, model_gene_info_csv)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent reading input files as data frames: {tot_time} seconds.")
 
     # log a message to indicate successful file reading
     print("Files read successfully.")
 
     # match the locus tags of the model species genes to those in the OrthoFinder TSV file
+    start_time = time.perf_counter()
     matched_df = match_locus(orthofinder_df, model_gene_info_df)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent matching locus tags of the model species to those in the OrthoFinder TSV file: {tot_time} seconds.")
     print("Locus matching completed.")
 
     # determine the path for the matched output file and save the matched data frame as CSV
@@ -171,14 +180,26 @@ def main() -> None:
 
 
     # read the OrthoFinder TSV file as a dictionary
+    start_time = time.perf_counter()
     orthofinder_data = read_tsv(orthofinder_tsv)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent reading OrthoFinder TSV as a dictionary: {tot_time} seconds.")
 
     # Convert the matched DataFrame to a dictionary
+    start_time = time.perf_counter()
     matched_model_locus_data = matched_df.to_dict()
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent converting the matched data frame to a dictionary: {tot_time} seconds.")
 
     # match the orthogroups of the target species genes with those of the model species genes
     print("target_species_column_name:", target_species_column_name)
+    start_time = time.perf_counter()
     target_matched_results = match_orthogroups(orthofinder_data, matched_model_locus_data, target_species_column_name)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent matching orthogroups: {tot_time} seconds.")
     print("Orthogroups matched.")
 
     # save the target match data frame as a CSV file if verbosity is enabled
@@ -188,10 +209,18 @@ def main() -> None:
         print(f"Target match saved to {path}.")
 
     # extract the gene IDs from the target match data frame
+    start_time = time.perf_counter()
     gene_ids = extract_gene_ids(target_matched_results)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent extracting gene IDs from the target match data frame: {tot_time} seconds.")
 
     # match the gene IDs with the sequences in the input FASTA file
+    start_time = time.perf_counter()
     matched_target_sequences = match_sequences(input_fasta_file, gene_ids)
+    end_time = time.perf_counter()
+    tot_time = end_time - start_time
+    print(f"Time spent matching the gene IDs with the FASTA sequences: {tot_time} seconds.")
 
     # check if any sequences were matched from the input FASTA file
     if not matched_target_sequences:
