@@ -145,15 +145,16 @@ optional arguments:
 
 The `INPUT_FOLDER` argument should be the path to the folder containing the OrthoFinder TSV, subsetted CSV, and target protein fasta. The `-t `or `--target_column` option should be followed by the name of the target column in the TSV file to match with gene information. You will need to open or preview the Orthofinder.tsv to get retrieve this -- it will be in the header. The optional `-o` or `--output` option specifies the output file path (default: `target_species_orthologs.fa`). The `--verbose` option will save intermediate output files in the verbose_output folder for debugging if necessary.
 
-The script reads the input files, matches the model locus IDs between the TSV and gene information CSV (if `--verbose`, the output of this is: `model_locus_matched_to_orthogroup_output.csv`), matches the target orthogroups (if `--verbose`, the output of this is: `target_matched_to_model_orthologs.csv`), extracts the target gene IDs, matches these with sequences in the inpu target protein fasta, and saves the final output to the specified or default output fasta file in the main directory.
+The script reads the input files, matches the model locus IDs between the TSV and gene information CSV (if `--verbose`, the output of this is: `model_locus_matched_to_orthogroup_output.csv`), matches the target orthogroups (if `--verbose`, the output of this is: `target_matched_to_model_orthologs.csv`), extracts the target gene IDs, matches these with sequences in the input target protein fasta, and saves the final output to the specified or default output fasta file in the main directory.
 
 A .gff and .gtf file are common outputs of most annotation programs now. The .gtf file contains information about the location of each gene and will help us narrow down on which orthologs are in our target region. To do this, run `find_orthologs_in_region.py`:
 
 ```
-usage: find_orthologs_in_region.py [-h] -f FASTA -g GTF -c CHROMOSOME [-s START] [-e END] -o OUTPUT [--find_descriptions FIND_DESCRIPTIONS] [--fasta_part_index FASTA_PART_INDEX] [--fasta_separator FASTA_SEPARATOR]
+usage: find_orthologs_in_region.py [-h] -f FASTA -g GTF -c CHROMOSOME [-s START] [-e END] -o OUTPUT -v VERBOSE_OUTPUT
+                                   [--fasta_part_index FASTA_PART_INDEX] [--fasta_separator FASTA_SEPARATOR]
                                    [--gtf_column_type GTF_COLUMN_TYPE] [--gtf_pattern GTF_PATTERN] [--postfix POSTFIX]
 
-Find proteins in a specific range on a specific chromosome.
+Find orthologs in a specific region and parse the results.
 
 options:
   -h, --help            show this help message and exit
@@ -166,9 +167,9 @@ options:
                         Start position.
   -e END, --end END     End position.
   -o OUTPUT, --output OUTPUT
-                        Output text file.
-  --find_descriptions FIND_DESCRIPTIONS
-                        CSV file with gene descriptions.
+                        Output CSV file for the final parsed results.
+  -v VERBOSE_OUTPUT, --verbose_output VERBOSE_OUTPUT
+                        Directory containing 'target_matched_to_model_orthologs.csv' and 'model_locus_matched_to_orthogroup_output.csv'.
   --fasta_part_index FASTA_PART_INDEX
                         Index of the part in the FASTA header (1-based index). Default is 2.
   --fasta_separator FASTA_SEPARATOR
@@ -176,10 +177,11 @@ options:
   --gtf_column_type GTF_COLUMN_TYPE
                         Type of column to extract information from in the GTF file. Default is 'transcript'.
   --gtf_pattern GTF_PATTERN
-                        Regular expression pattern to extract the ID from the GTF file. Default searches anything in Column 8 (0-based index) of the gtf.
+                        Regular expression pattern to extract the ID from the GTF file. Default searches anything in Column 8 (0-based
+                        index) of the gtf.
   --postfix POSTFIX     Custom post-fix to add to identifiers extracted from GTF file.
 ```
-Where `--find_descriptions` is an optional argument that allows you to append the Model Ortholog functional description to the target genes listed in the output file. The csv input for this will be the `target_matched_to_model_orthologs.csv` located in the `verbose_output` directory. 
+Where `--verbose_output` is an argument that allows you to append the `verbose_output` directory. 
 
 You can search an entire chromosome (note: you must know your chromosome of interest ahead of time), since the `-s` and `-e` arguments are optional. 
 
