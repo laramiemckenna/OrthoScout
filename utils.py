@@ -170,7 +170,7 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
                     else:
                         matched_results[key][1] += f"; {value}"
             else:
-                print(f"Warning: target_index ({target_index}) is out of range for row {row_idx}. Skipping this row.")
+                #print(f"Warning: target_index ({target_index}) is out of range for row {row_idx}. Skipping this row.")
                 continue  # Skip the current row and proceed to the next row
 
     # Convert the matched_results dictionary to a list of lists and return it
