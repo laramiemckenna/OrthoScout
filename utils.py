@@ -124,23 +124,19 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
         target_column (str): The name of the column in the TSV file to match with the dictionary.
 
     Returns:
-        list: A list of lists, where each inner list contains the matched information for each matched key in the form of (orthogroup_id, locus_id, description, target_column_value).
+        dictionary: Modified to create separate entries for each locus ID within an orthogroup.
     """
     # Create a dictionary to store the information for each orthogroup in the CSV file
     orthogroups = {}
     for data_idx in model_species_locus_tag_data['Orthogroup']:
         group = model_species_locus_tag_data['Orthogroup'][data_idx]
-
-        # create locus, description tuple
         locus = model_species_locus_tag_data['locus'][data_idx]
         description = model_species_locus_tag_data['description'][data_idx]
-        locus_description = (locus, description)
 
+        # Store each locus and description separately
         if group not in orthogroups:
-            # If the orthogroup ID doesn't exist in the dictionary, add it and initialize it with a list containing the locus information
-            orthogroups[group] = [locus_description]
-        else:
-            orthogroups[group].append(locus_description)
+            orthogroups[group] = []
+        orthogroups[group].append((locus, description))
 
     # Get the index of the target column in the TSV data
     if target_column not in tsv_data[0]:
@@ -150,7 +146,7 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
     target_index = tsv_data[0].index(target_column)
 
     # Create a dictionary to store the matched results
-    matched_results = {}
+    matched_results = []
 
     # Iterate over each row in the TSV data
     for row_idx, row in enumerate(tsv_data[1:], start=1):  # Start from index 1 to skip the header row
@@ -158,23 +154,19 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
         if orthogroup_id in orthogroups:
             # Check if target_index is valid for this row
             if target_index < len(row):
-                # For each matching orthogroup, iterate over its locus information in the CSV data
-                for locus_description in orthogroups[orthogroup_id]:
-                    # Create a key for the matched result using the orthogroup ID and the target column value
-                    key = (orthogroup_id, row[target_index])
-                    value = locus_description[0]
-                    # If the key doesn't exist in the matched_results dictionary, add a new entry
-                    if key not in matched_results:
-                        matched_results[key] = [orthogroup_id] + list(locus_description) + [row[target_index]]
-                    # If the key already exists, append the new locus ID to the existing entry
-                    else:
-                        matched_results[key][1] += f"; {value}"
+                target_genes = row[target_index]
+                # For each locus in the orthogroup
+                for locus, description in orthogroups[orthogroup_id]:
+                    matched_results.append([
+                        orthogroup_id,
+                        locus,
+                        description,
+                        target_genes
+                    ])
             else:
-                #print(f"Warning: target_index ({target_index}) is out of range for row {row_idx}. Skipping this row.")
-                continue  # Skip the current row and proceed to the next row
+                print(f"Warning: target_index ({target_index}) is out of range for row {row_idx}")
 
-    # Convert the matched_results dictionary to a list of lists and return it
-    return list(matched_results.values())
+    return matched_results
 
 
 
