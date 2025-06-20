@@ -146,7 +146,7 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
     target_index = tsv_data[0].index(target_column)
 
     # Create a dictionary to store the matched results
-    matched_results = {}
+    matched_results = []
 
     # Iterate over each row in the TSV data
     for row_idx, row in enumerate(tsv_data[1:], start=1):  # Start from index 1 to skip the header row
