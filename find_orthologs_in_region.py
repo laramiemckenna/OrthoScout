@@ -51,6 +51,36 @@ def read_csv(file: str) -> dict:
     print(f"Processed {len(descriptions)} entries from descriptions file")
     return descriptions
 
+def read_model_descriptions(file: str) -> dict:
+    """Reads model gene descriptions from CSV file."""
+    model_descriptions = {}
+    with open(file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            locus = row["locus"].strip()
+            model_descriptions[locus] = {
+                "Description": row["description"].split("Description: ")[-1].split(", Other Name:")[0],
+                "Other Name": row["description"].split("Other Name: ")[-1].split(", Keywords:")[0],
+                "Keywords": row["description"].split("Keywords: ")[-1].strip()
+            }
+    return model_descriptions
+
+def read_target_mappings(file: str) -> dict:
+    """Reads target to orthogroup/model gene mappings."""
+    target_mappings = {}
+    with open(file, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            target_genes = row["Target Organism"].strip('"').split(", ")
+            for target in target_genes:
+                if target not in target_mappings:
+                    target_mappings[target] = []
+                target_mappings[target].append({
+                    "Orthogroup": row["Orthogroup"],
+                    "Model Gene": row["Locus"]
+                })
+    return target_mappings
+
 def genes_in_range(fasta_file: str, gtf_file: str, chromosome: str, start=None, end=None, descriptions_directory=None,
                    fasta_part_index=1, fasta_separator=" ", gtf_column_type="CDS", gtf_pattern="", postfix=""):
     """Finds all proteins located within a specified range on a specified chromosome."""
@@ -113,6 +143,46 @@ def genes_in_range(fasta_file: str, gtf_file: str, chromosome: str, start=None, 
     print(f"Found {num_orthologs_found} orthologs in the specified region")
     return results
 
+def find_multi_matches(results: list) -> dict:
+    """Find genes with multiple Arabidopsis matches."""
+    gene_matches = {}
+    
+    # Group results by target gene
+    for result in results:
+        protein_id = result['Protein']
+        model_gene = result['Arabidopsis Gene Model']
+        orthogroup = result['Orthogroup']
+        
+        if protein_id not in gene_matches:
+            gene_matches[protein_id] = {
+                'models': set(),
+                'orthogroup': orthogroup
+            }
+        gene_matches[protein_id]['models'].add(model_gene)
+    
+    # Filter for only multi-matches
+    multi_matches = {
+        gene: info for gene, info in gene_matches.items() 
+        if len(info['models']) > 1
+    }
+    
+    return multi_matches
+
+def write_warning_file(multi_matches: dict, output_dir: str):
+    """Write warning file for genes with multiple matches."""
+    warning_file = os.path.join(output_dir, "genes_with_warnings.csv")
+    
+    with open(warning_file, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Target_Gene', 'Orthogroup', 'Arabidopsis_Models'])
+        
+        for gene, info in multi_matches.items():
+            writer.writerow([
+                gene,
+                info['orthogroup'],
+                ';'.join(sorted(info['models']))
+            ])
+
 def parse_protein_data(results, descriptions_directory, output_csv):
     """Parse protein data directly from the results of genes_in_range and merge with locus data."""
     if not results:
@@ -121,91 +191,69 @@ def parse_protein_data(results, descriptions_directory, output_csv):
         
     print("\n--- STEP 3: Parsing ortholog data ---")
     
-    # Initialize lists to store parsed data
-    proteins = []
-    orthogroups = []
-    starts = []
-    stops = []
-    descriptions = []
-    other_names = []
-    keywords = []
+    # Load model descriptions and target mappings
+    model_desc_file = os.path.join(descriptions_directory, "model_locus_matched_to_orthogroup_output.csv")
+    target_map_file = os.path.join(descriptions_directory, "target_matched_to_model_orthologs.csv")
     
-    # Regular expression patterns for extracting data
-    orthogroup_pattern = re.compile(r"(OG\d+)")
-    description_pattern = re.compile(r"Description: (.*?)(?:, Other Name|, Keywords)")
-    other_name_pattern = re.compile(r"Other Name: (.*?)(?:, Keywords|})")
-    keywords_pattern = re.compile(r"Keywords: (.*?)}")
+    model_descriptions = read_model_descriptions(model_desc_file)
+    target_mappings = read_target_mappings(target_map_file)
     
-    print("Extracting ortholog information from results...")
+    # Initialize output data
+    output_rows = []
+    
     # Process each result
     for result in results:
         protein_id = result['protein_id']
-        full_desc = result['description']
         
-        # Extract orthogroup
-        orthogroup_match = orthogroup_pattern.search(full_desc)
-        orthogroup = orthogroup_match.group(1) if orthogroup_match else "N/A"
-        
-        # Extract other metadata from the description
-        description_match = description_pattern.search(str(result['model_description']))
-        other_name_match = other_name_pattern.search(str(result['model_description']))
-        keywords_match = keywords_pattern.search(str(result['model_description']))
-        
-        # Append data
-        proteins.append(protein_id)
-        orthogroups.append(orthogroup)
-        starts.append(result['start'])
-        stops.append(result['end'])
-        descriptions.append(description_match.group(1) if description_match else "N/A")
-        other_names.append(other_name_match.group(1) if other_name_match else "N/A")
-        keywords.append(keywords_match.group(1) if keywords_match else "N/A")
+        # Get all model genes mapped to this target
+        if protein_id in target_mappings:
+            for mapping in target_mappings[protein_id]:
+                model_gene = mapping["Model Gene"]
+                orthogroup = mapping["Orthogroup"]
+                
+                # Get description for this specific model gene
+                desc_data = model_descriptions.get(model_gene, {
+                    "Description": "N/A",
+                    "Other Name": "N/A",
+                    "Keywords": "N/A"
+                })
+                
+                output_rows.append({
+                    "Protein": protein_id,
+                    "Orthogroup": orthogroup,
+                    "Arabidopsis Gene Model": model_gene,
+                    "Start": result['start'],
+                    "Stop": result['end'],
+                    "Description": desc_data["Description"],
+                    "Other Name": desc_data["Other Name"],
+                    "Keywords": desc_data["Keywords"]
+                })
     
-    # Create a DataFrame
-    print("Creating dataframe with ortholog information...")
-    df = pd.DataFrame({
-        "Protein": proteins,
-        "Orthogroup": orthogroups,
-        "Start": starts,
-        "Stop": stops,
-        "Description": descriptions,
-        "Other Name": other_names,
-        "Keywords": keywords
-    })
+    # Create and save DataFrame
+    df = pd.DataFrame(output_rows)
+    df_sorted = df.sort_values(by=["Start", "Stop"])
+    df_sorted.to_csv(output_csv, index=False)
     
-    # Sort by Start position
-    df_sorted = df.sort_values(by="Start")
+    # Find and report multiple matches
+    multi_matches = find_multi_matches(output_rows)
     
-    # Path to the locus data file in the specified directory
-    locus_file = os.path.join(descriptions_directory, "model_locus_matched_to_orthogroup_output.csv")
-    
-    print("\n--- STEP 4: Merging with locus information ---")
-    # Load the locus data if file exists
-    if os.path.exists(locus_file):
-        print(f"Reading locus file: {locus_file}")
-        locus_df = pd.read_csv(locus_file)
-        print(f"Found {len(locus_df)} locus entries")
+    if multi_matches:
+        print("\nWARNING! These genes have multiple possible Arabidopsis thaliana orthologs.")
+        print("View the gene trees for these orthogroups to assess these genes further.\n")
         
-        # Merge with locus data
-        print("Merging ortholog data with locus information...")
-        merged_df = df_sorted.merge(locus_df, on="Orthogroup", how="left")
-        
-        # Rename columns
-        merged_df.rename(columns={"locus": "Arabidopsis Gene Model"}, inplace=True)
-        
-        # Reorder columns
-        merged_df = merged_df[["Protein", "Orthogroup", "Arabidopsis Gene Model", "Start", "Stop", "Description", "Other Name", "Keywords"]]
-    else:
-        print(f"Warning: Locus file not found at {locus_file}. Proceeding without locus information.")
-        merged_df = df_sorted
-        # Add empty column for Arabidopsis Gene Model
-        merged_df["Arabidopsis Gene Model"] = "N/A"
-        # Reorder columns
-        merged_df = merged_df[["Protein", "Orthogroup", "Arabidopsis Gene Model", "Start", "Stop", "Description", "Other Name", "Keywords"]]
+        print("Multiple match summary:")
+        for gene, info in multi_matches.items():
+            print(f"Target gene: {gene}")
+            print(f"Orthogroup: {info['orthogroup']}")
+            print(f"Arabidopsis models: {', '.join(sorted(info['models']))}")
+            print()
+            
+        # Write warning file
+        output_dir = os.path.dirname(output_csv)
+        write_warning_file(multi_matches, output_dir)
+        print(f"\nWarning details written to: {os.path.join(output_dir, 'genes_with_warnings.csv')}")
     
-    # Save to CSV
-    print(f"\n--- STEP 5: Saving results to {output_csv} ---")
-    merged_df.to_csv(output_csv, index=False)
-    print(f"Successfully saved {len(merged_df)} orthologs to {output_csv}")
+    print(f"\nSuccessfully saved {len(df_sorted)} entries to {output_csv}")
 
 def main():
     parser = argparse.ArgumentParser(description="Find orthologs in a specific region and parse the results.")
