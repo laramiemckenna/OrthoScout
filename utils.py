@@ -144,30 +144,25 @@ def match_orthogroups(tsv_data: List[List[str]], model_species_locus_tag_data: D
         return []
 
     target_index = tsv_data[0].index(target_column)
-
-    # Create a dictionary to store the matched results
     matched_results = []
 
     # Iterate over each row in the TSV data
-    for row_idx, row in enumerate(tsv_data[1:], start=1):  # Start from index 1 to skip the header row
+    for row in tsv_data[1:]:  # Skip header row
         orthogroup_id = row[0]
         if orthogroup_id in orthogroups:
-            # Check if target_index is valid for this row
-            if target_index < len(row):
-                target_genes = row[target_index]
-                # For each locus in the orthogroup
-                for locus, description in orthogroups[orthogroup_id]:
-                    matched_results.append([
-                        orthogroup_id,
-                        locus,
-                        description,
-                        target_genes
-                    ])
-            else:
-                print(f"Warning: target_index ({target_index}) is out of range for row {row_idx}")
+            # Get target genes if the index exists, otherwise use empty string
+            target_genes = row[target_index] if target_index < len(row) else ""
+            
+            # For each locus in the orthogroup
+            for locus, description in orthogroups[orthogroup_id]:
+                matched_results.append([
+                    orthogroup_id,
+                    locus,
+                    description,
+                    target_genes
+                ])
 
     return matched_results
-
 
 
 def write_to_csv(file_name: str, data: List[List[str]]) -> None:
