@@ -252,6 +252,11 @@ python find_orthologs_in_region.py -f spinacia_oleracea_pollen_orthologs.fa -g .
 
 ***Note:*** you can generate standard format `gtf` files from `gff` files using the program [AGAT](https://agat.readthedocs.io/en/latest/gff_to_gtf.html).
 
+---
+
+## Funding: 
+
+This work was funded by National Science Foundation IOS-PGRP CAREER #2239530 (Alex Harkess) and by National Science Foundation Graduate Research Fellowship Program (Laramie Akozbek).
 
 ---
 
